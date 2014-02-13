@@ -128,6 +128,11 @@ static int vtunerc_start_feed(struct dvb_demux_feed *feed)
 		return -EINVAL;
 	}
 
+	if (feed->pid >= 0x2000 ) {
+	  printk(KERN_ERR "vtunerc%d: full mux not supported\n",ctx->idx);
+	  return -EINVAL;
+	}
+
 	/* organize PID list table */
 	printk(KERN_ERR "vtunerc%d: feed add %d\n",ctx->idx,feed->pid);
 
