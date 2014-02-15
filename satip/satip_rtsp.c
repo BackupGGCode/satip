@@ -158,7 +158,7 @@ static void timeout_reconnect(int param)
 t_satip_rtsp* satip_rtsp_new(t_satip_config* satip_config, 
 			     struct polltimer** timer_queue,
 			     const char* host, 
-			     char* port,
+			     const char* port,
 			     int rtp_port)
 {
   t_satip_rtsp* rtsp; 
@@ -315,7 +315,7 @@ static int send_setup(t_satip_rtsp* rtsp)
   int printed;
   int remain=MAX_BUF;
   
-  printed = snprintf(buf,remain,"SETUP rtsp://%s:%s/", rtsp->host, rtsp->port);
+  printed = snprintf(buf,remain,"SETUP rtsp://%s/?", rtsp->host);
   if ( printed >= remain )
     return SATIP_RTSP_ERROR;
 
@@ -324,6 +324,10 @@ static int send_setup(t_satip_rtsp* rtsp)
   if ( printed >= remain )
     return SATIP_RTSP_ERROR;
 
+  printed += snprintf(buf+printed,remain-printed,"&");
+
+  if ( printed >= remain )
+    return SATIP_RTSP_ERROR;
 
 #if 1
   printed += satip_prepare_pids(rtsp->satip_config,buf+printed,remain-printed,0);
@@ -371,8 +375,8 @@ static int send_play(t_satip_rtsp* rtsp)
   tuning = satip_tuning_required(rtsp->satip_config);
   pid_update = satip_pid_update_required(rtsp->satip_config);
 
-  printed = snprintf(buf,remain,"PLAY rtsp://%s:%s/stream=%d%s", 
-		     rtsp->host,rtsp->port,rtsp->streamid,
+  printed = snprintf(buf,remain,"PLAY rtsp://%s/stream=%d%s", 
+		     rtsp->host,rtsp->streamid,
 		     (tuning || pid_update) ? "?" : "");
   if ( printed>=remain )
     return SATIP_RTSP_ERROR;
@@ -389,6 +393,15 @@ static int send_play(t_satip_rtsp* rtsp)
 
   if (tuning || pid_update )
     {
+
+      if (tuning)
+	{
+	  printed += snprintf(buf+printed,remain-printed,"&");
+
+	  if ( printed >= remain )
+	    return SATIP_RTSP_ERROR;
+	}
+
       printed += satip_prepare_pids(rtsp->satip_config, buf+printed, remain-printed,1);
       if ( printed>=remain )
 	return SATIP_RTSP_ERROR;
@@ -496,7 +509,7 @@ static void send_request(t_satip_rtsp* rtsp,
   if ( (*sendfunc)(rtsp) == SATIP_RTSP_OK )
     rtsp->timer = polltimer_start( rtsp->timer_queue,
 				   timeout_reconnect,
-				   1000,(int)rtsp);
+				   2000,(int)rtsp);
   else
     restart_connection(rtsp,0);
 }

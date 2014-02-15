@@ -33,7 +33,7 @@ struct satip_rtsp;
 struct satip_rtsp* satip_rtsp_new(t_satip_config* satip_config, 
 				  struct polltimer** timer_queue,
 				  const char* host, 
-				  char* port,
+				  const char* port,
 				  int rtp_port );
 
 int   satip_rtsp_socket(struct satip_rtsp* rtsp);

@@ -114,6 +114,9 @@ t_satip_vtuner* satip_vtuner_new(char* devname,t_satip_config* satip_cfg)
   
   vt->fd=fd;
   vt->satip_cfg=satip_cfg;
+  
+  /* set default position A, if appl. does not configure */
+  satip_set_position(satip_cfg,1);
 
   vt->tone_set=0;
 
@@ -221,6 +224,51 @@ static void set_voltage(struct satip_vtuner* vt, struct vtuner_message* msg)
 }
 
 
+static void diseqc_msg(struct satip_vtuner* vt, struct vtuner_message* msg)
+{
+  char dbg[50];
+  struct diseqc_master_cmd* cmd=&msg->body.diseqc_master_cmd;
+  
+  if ( cmd->msg[0] == 0xe0 &&
+       cmd->msg[1] == 0x10 &&
+       cmd->msg[2] == 0x38 &&
+       cmd->msg_len == 4 )
+    {
+      /* committed switch */
+      u8 data=cmd->msg[3];
+
+      if ( (data & 0x01) == 0x01 )
+	{
+	  vt->tone = SEC_TONE_ON; /* high band */
+	  vt->tone_set=1;
+	}
+      else if ( (data & 0x11) == 0x10 )
+	{
+	  vt->tone = SEC_TONE_OFF; /* low band */
+	  vt->tone_set=1;
+	}
+
+      if ( (data & 0x02) == 0x02 )
+	satip_set_polarization(vt->satip_cfg, SATIPCFG_P_HORIZONTAL);	
+      else if ( (data & 0x22) == 0x20 )
+	satip_set_polarization(vt->satip_cfg, SATIPCFG_P_VERTICAL);
+
+      /* some invalid combinations ? */
+      satip_set_position(vt->satip_cfg, ( (data & 0x0c) >> 2) + 1 );
+    }
+  
+  sprintf(dbg,"%02x %02x %02x   msg %02x %02x %02x len %d",
+	  msg->body.diseqc_master_cmd.msg[0],
+	  msg->body.diseqc_master_cmd.msg[1],
+	  msg->body.diseqc_master_cmd.msg[2],
+	  msg->body.diseqc_master_cmd.msg[3],
+	  msg->body.diseqc_master_cmd.msg[4],
+	  msg->body.diseqc_master_cmd.msg[5],
+	  msg->body.diseqc_master_cmd.msg_len);
+  DEBUG(MSG_MAIN,"MSG_SEND_DISEQC_MSG:  %s\n",dbg);
+}      
+
+
 
 static void set_pidlist(struct satip_vtuner* vt, struct vtuner_message* msg)
 {
@@ -267,7 +315,6 @@ void satip_vtuner_event(struct satip_vtuner* vt)
     case MSG_PIDLIST:
       set_pidlist(vt,&msg);
       break;
-
       
     case MSG_READ_STATUS:  
       DEBUG(MSG_MAIN,"MSG_READ_STATUS\n");
@@ -299,6 +346,20 @@ void satip_vtuner_event(struct satip_vtuner* vt)
       msg.body.ucb = 0;
       break;
 
+    case MSG_SEND_DISEQC_BURST:
+      DEBUG(MSG_MAIN,"MSG_SEND_DISEQC_BURST\n");
+      if ( msg.body.burst == SEC_MINI_A )
+	satip_set_position(vt->satip_cfg,1);
+      else if ( msg.body.burst == SEC_MINI_B )
+	satip_set_position(vt->satip_cfg,2);
+      else
+	ERROR(MSG_MAIN,"invalid diseqc burst %d\n",msg.body.burst);
+      break;
+
+    case MSG_SEND_DISEQC_MSG:
+      diseqc_msg(vt, &msg);
+      break;
+      
     default:
       break;
     }

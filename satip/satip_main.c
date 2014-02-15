@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 
   char opt;
 
-  while((opt = getopt(argc, argv, "h:p")) != -1 ) {
+  while((opt = getopt(argc, argv, "h:p:")) != -1 ) {
     switch(opt) 
       {
       case 'h': 
@@ -110,8 +110,6 @@ int main(int argc, char** argv)
     exit(1);
   }
       
-
-
   satconf = satip_new_config();
 
 #if 0
@@ -136,6 +134,12 @@ int main(int argc, char** argv)
   srtp  = satip_rtp_new(0);
 
 #endif
+  
+  if ( satvt == NULL )
+    {
+      ERROR(MSG_MAIN,"vtuner control failed\n");
+      exit(1);
+    }
 
   srtsp = satip_rtsp_new(satconf,&timerq, host, port,
 			 satip_rtp_port(srtp));

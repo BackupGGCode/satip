@@ -31,9 +31,16 @@
 #define  PC_PILOTS    0x0020
 #define  PC_SYMRATE   0x0040
 #define  PC_FECINNER  0x0080
+#define  PC_POSITION  0x0100
 
-#define  PC_COMPLETE_DVBS   ( PC_FREQ | PC_POL | PC_MODSYS | PC_SYMRATE | PC_FECINNER )
-#define  PC_COMPLETE_DVBS2  ( PC_FREQ | PC_POL | PC_ROLLOFF | PC_MODSYS | PC_MODTYPE | PC_PILOTS | PC_SYMRATE | PC_FECINNER )
+#define  PC_COMPLETE_DVBS   \
+  ( PC_FREQ | PC_POL | PC_MODSYS | PC_SYMRATE | \
+    PC_FECINNER | PC_POSITION )
+
+#define  PC_COMPLETE_DVBS2  \
+  ( PC_FREQ | PC_POL | PC_ROLLOFF | PC_MODSYS | \
+    PC_MODTYPE | PC_PILOTS | PC_SYMRATE | \
+    PC_FECINNER | PC_POSITION )
 
 
 /* PID handling */
@@ -310,6 +317,18 @@ int satip_set_fecinner(t_satip_config* cfg, t_fec_inner fecinner)
   return SATIPCFG_OK;
 }
 
+int satip_set_position(t_satip_config* cfg, int position)
+{
+  if ( (cfg->param_cfg & PC_POSITION) &&  cfg->position == position )
+    return SATIPCFG_OK;
+
+  cfg->param_cfg |= PC_POSITION;
+  cfg->position = position;
+
+  param_update_status(cfg);
+  return SATIPCFG_OK;
+}
+
 
 int satip_valid_config(t_satip_config* cfg)
 {
@@ -356,7 +375,8 @@ int satip_prepare_tuning(t_satip_config* cfg, char* str, int maxlen)
   int printed;
 
   /* DVB-S mandatory parameters */
-  printed = snprintf(str, maxlen, "?src=1&freq=%d.%d&pol=%c&msys=%s&sr=%d&fec=%s",
+  printed = snprintf(str, maxlen, "src=%d&freq=%d.%d&pol=%c&msys=%s&sr=%d&fec=%s",
+		     cfg->position,
 		     cfg->frequency/10, cfg->frequency%10,
 		     strmap_polarization[cfg->polarization],
 		     cfg->mod_sys == SATIPCFG_MS_DVB_S ? "dvbs" : "dvbs2",
@@ -387,7 +407,7 @@ int satip_prepare_pids(t_satip_config* cfg, char* str, int maxlen,int modpid)
 
   if (modpid)
     {
-      printed = setpidlist(cfg,str,maxlen,"&addpids=",PID_ADD, PID_ADD);
+      printed = setpidlist(cfg,str,maxlen,"addpids=",PID_ADD, PID_ADD);
 
       if ( printed>=maxlen )
 	return printed;
@@ -397,12 +417,12 @@ int satip_prepare_pids(t_satip_config* cfg, char* str, int maxlen,int modpid)
     }
   else
     {
-      printed = setpidlist(cfg,str,maxlen,"&pids=",PID_VALID, PID_ADD);
+      printed = setpidlist(cfg,str,maxlen,"pids=",PID_VALID, PID_ADD);
       
       /* nothing was added, use "none" */
       if ( printed == 0 )
 	{
-	  printed = snprintf(str,maxlen,"&pids=none");
+	  printed = snprintf(str,maxlen,"pids=none");
 	}
     }
   

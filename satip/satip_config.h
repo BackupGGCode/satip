@@ -95,7 +95,8 @@ typedef struct satip_config
   t_mod_type        mod_type;
   t_pilots          pilots;
   unsigned int      symbol_rate;
-  t_fec_inner       fec_inner;     
+  t_fec_inner       fec_inner;   
+  int               position;
   unsigned short    pid[SATIPCFG_MAX_PIDS];  
   
   /* delta info for addpids/delpids cmd */
@@ -125,6 +126,8 @@ int satip_set_modtype(t_satip_config* cfg,t_mod_type modtype);
 int satip_set_pilots(t_satip_config* cfg,t_pilots pilots);
 int satip_set_symbol_rate(t_satip_config* cfg,unsigned int symrate);
 int satip_set_fecinner(t_satip_config* cfg, t_fec_inner fecinner);
+int satip_set_position(t_satip_config* cfg, int position);
+
 
 int satip_valid_config(t_satip_config* cfg);
 int satip_tuning_required(t_satip_config* cfg);
