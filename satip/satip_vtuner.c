@@ -314,6 +314,8 @@ void satip_vtuner_event(struct satip_vtuner* vt)
     
     case MSG_PIDLIST:
       set_pidlist(vt,&msg);
+      DEBUG(MSG_MAIN,"set_pidlist: no response required\n");
+      return;
       break;
       
     case MSG_READ_STATUS:  
