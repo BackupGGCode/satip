@@ -23,11 +23,17 @@
 
 #include "vtunerc_priv.h"
 
+
 #if (DVB_API_VERSION << 8 | DVB_API_VERSION_MINOR) < 0x0505
-#error ========================================================================
-#error Version 5.5 or newer of DVB API is required (see at linux/dvb/version.h)
-#error You can find it in kernel version >= 3.3.0
-#error ========================================================================
+/*
+ *workaround for some older platforms
+ *#error ========================================================================
+ *#error Version 5.5 or newer of DVB API is required (see at linux/dvb/version.h)
+ *#error You can find it in kernel version >= 3.3.0
+ *#error ========================================================================
+*/
+#else
+#define HAS_DELSYS
 #endif
 
 struct dvb_proxyfe_state {
@@ -361,7 +367,9 @@ static struct dvb_frontend *dvb_proxyfe_qpsk_attach(struct vtunerc_ctx *ctx, int
 	memcpy(&fe->ops, &dvb_proxyfe_qpsk_ops, sizeof(struct dvb_frontend_ops));
 	if (can_2g_modulation) {
 		fe->ops.info.caps |= FE_CAN_2G_MODULATION;
+#ifdef HAS_DELSYS
 		fe->ops.delsys[1] = SYS_DVBS2;
+#endif
 		strcpy(fe->ops.info.name, "vTuner proxyFE DVB-S2");
 	}
 
@@ -394,7 +402,9 @@ static struct dvb_frontend *dvb_proxyfe_qam_attach(struct vtunerc_ctx *ctx)
 }
 
 static struct dvb_frontend_ops dvb_proxyfe_ofdm_ops = {
-	.delsys = { SYS_DVBT },
+#ifdef HAS_DELSYS
+        .delsys = { SYS_DVBT },
+#endif
 	.info = {
 		.name			= "vTuner proxyFE DVB-T",
 		.type			= FE_OFDM,
@@ -426,7 +436,9 @@ static struct dvb_frontend_ops dvb_proxyfe_ofdm_ops = {
 };
 
 static struct dvb_frontend_ops dvb_proxyfe_qam_ops = {
-	.delsys = { SYS_DVBC_ANNEX_A },
+#ifdef HAS_DELSYS
+        .delsys = { SYS_DVBC_ANNEX_A },
+#endif
 	.info = {
 		.name			= "vTuner proxyFE DVB-C",
 		.type			= FE_QAM,
@@ -456,7 +468,9 @@ static struct dvb_frontend_ops dvb_proxyfe_qam_ops = {
 };
 
 static struct dvb_frontend_ops dvb_proxyfe_qpsk_ops = {
-	.delsys = { SYS_DVBS },
+#ifdef HAS_DELSYS
+        .delsys = { SYS_DVBS },
+#endif
 	.info = {
 		.name			= "vTuner proxyFE DVB-S",
 		.type			= FE_QPSK,
