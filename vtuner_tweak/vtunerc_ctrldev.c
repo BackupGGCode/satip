@@ -137,7 +137,9 @@ static int vtunerc_ctrldev_close(struct inode *inode, struct file *filp)
 {
 	struct vtunerc_ctx *ctx = filp->private_data;
 	int minor;
+#if 0
 	struct vtuner_message fakemsg;
+#endif
 
 	dprintk(ctx, "closing (fd_opened=%d)\n", ctx->fd_opened);
 
@@ -152,6 +154,10 @@ static int vtunerc_ctrldev_close(struct inode *inode, struct file *filp)
 	dprintk(ctx, "faked response\n");
 	wake_up_interruptible(&ctx->ctrldev_wait_response_wq);
 
+	/* hack: module hangs if application is killed by SIGSEGV 
+	 * possible solution: check for zombie status? 
+	 */
+#if 0
 	/* clear pidtab */
 	dprintk(ctx, "sending pidtab cleared ...\n");
 	if (down_interruptible(&ctx->xchange_sem))
@@ -160,6 +166,7 @@ static int vtunerc_ctrldev_close(struct inode *inode, struct file *filp)
 	vtunerc_ctrldev_xchange_message(ctx, &fakemsg, 0);
 	up(&ctx->xchange_sem);
 	dprintk(ctx, "pidtab clearing done\n");
+#endif
 
 	return 0;
 }
