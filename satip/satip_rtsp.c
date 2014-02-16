@@ -139,7 +139,7 @@ static void reset_connection(t_satip_rtsp* rtsp)
 }
 
 
-static void timeout_reconnect(int param)
+static void timeout_reconnect(void* param)
 {
   t_satip_rtsp* rtsp=(t_satip_rtsp*)param;
 
@@ -195,7 +195,7 @@ static void restart_connection(t_satip_rtsp* rtsp,int now)
       /* attempt again after some time*/
       rtsp->timer = polltimer_start( rtsp->timer_queue,
 				     timeout_reconnect,
-				     2000,(int)rtsp);
+				     2000,(void*)rtsp);
     }
 }
 
@@ -509,12 +509,12 @@ static void send_request(t_satip_rtsp* rtsp,
   if ( (*sendfunc)(rtsp) == SATIP_RTSP_OK )
     rtsp->timer = polltimer_start( rtsp->timer_queue,
 				   timeout_reconnect,
-				   2000,(int)rtsp);
+				   2000,(void*)rtsp);
   else
     restart_connection(rtsp,0);
 }
 
-static void timeout_keep_alive(int param)
+static void timeout_keep_alive(void* param)
 {
   t_satip_rtsp* rtsp=(t_satip_rtsp*)param;
 
@@ -603,7 +603,7 @@ void satip_rtsp_pollevents(t_satip_rtsp* rtsp, short events)
 
 		rtsp->timer = polltimer_start( rtsp->timer_queue,
 					       timeout_keep_alive,
-					       (rtsp->timeout-5)*1000,(int)rtsp);		
+					       (rtsp->timeout-5)*1000,(void*)rtsp);		
 	    }
 	  /* SATIP_RTSP_OK: response not yet complete, wait for more data.. */
 	  
@@ -663,7 +663,7 @@ void  satip_rtsp_check_update(struct satip_rtsp*  rtsp)
 	  DEBUG(MSG_NET,"connecting...\n");
 	  rtsp->timer = polltimer_start( rtsp->timer_queue,
 					 timeout_reconnect,
-					 5000,(int)rtsp);
+					 5000,(void*)rtsp);
 
 	  if ( connect_server(rtsp) == SATIP_RTSP_ERROR )
 	    /* network down, DNS error,... */

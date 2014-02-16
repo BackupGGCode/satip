@@ -1,5 +1,6 @@
 rmmod vtunerc
 cp vtunerc.ko /lib/modules/`uname -r`/kernel/drivers/media/tuners/vtunerc.ko 
+#cp vtunerc.ko /lib/modules/`uname -r`/kernel/drivers/media/dvb/vtunerc.ko
 depmod -a
 modprobe vtunerc
 sleep 1

@@ -23,8 +23,8 @@
 struct polltimer;
 
 struct polltimer* polltimer_start(struct polltimer** queue_head,
-				  void (*timer_handler)(int), 
-				  int msec,int param);
+				  void (*timer_handler)(void *), 
+				  int msec,void* param);
 
 void polltimer_cancel(struct polltimer** queue_head,
 		      struct polltimer* canceltimer);
@@ -35,8 +35,8 @@ struct polltimer_periodic;
 
 void  polltimer_periodic_start(struct polltimer** queue_head,
 			       struct polltimer_periodic** periodic,
-			       void (*timer_handler)(int), 
-			       int msec,int param);
+			       void (*timer_handler)(void *), 
+			       int msec,void* param);
 
 
 void polltimer_call_next(struct polltimer** queue_head);

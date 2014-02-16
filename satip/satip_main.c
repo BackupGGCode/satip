@@ -34,12 +34,12 @@
 
 
 int dbg_level = MSG_DEBUG;
-unsigned int dbg_mask = MSG_ALL; 
+unsigned int dbg_mask = MSG_MAIN | MSG_NET | MSG_HW | MSG_SRV; /* MSG_DATA */
 int use_syslog = 0;
 
 static int cseq=0;
 
-void test_sequencer(int param)
+void test_sequencer(void* param)
 {
   t_satip_config* sc=(t_satip_config*)param;
 

@@ -77,14 +77,14 @@ static void* rtp_receiver(void* param)
 	  if ( rx>12 && rxbuf[12] == 0x47 )
 	    {
 	      wr= write(srtp->fd,&rxbuf[12],rx-12);
-	      DEBUG(MSG_NET,"RTP: rd %d  wr %d\n",rx,wr);
+	      DEBUG(MSG_DATA,"RTP: rd %d  wr %d\n",rx,wr);
 	    }
 	}
 
       if ( pollfds[1].revents & POLLIN )
 	{
 	  pollfds[1].revents = 0;
-	  DEBUG(MSG_NET,"RTCP: rd %d\n",
+	  DEBUG(MSG_DATA,"RTCP: rd %d\n",
 		recv(pollfds[1].fd, rxbuf, 32768,0));
 	}
 

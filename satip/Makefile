@@ -5,7 +5,7 @@ OBJ = satip_rtp.o satip_vtuner.o satip_config.o \
 BIN = satip
 
 $(BIN):  $(OBJ)
-	$(CC) -lpthread -o $(BIN) $(OBJ)
+	$(CC) -lrt -lpthread -o $(BIN) $(OBJ)
 
 clean:
 	rm -f $(BIN) *.o *~

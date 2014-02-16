@@ -29,8 +29,8 @@ static long starttime=0;
 typedef struct polltimer {
   struct polltimer* next;
   struct timespec ts;
-  void (*timer_handler) (int);
-  int param;
+  void (*timer_handler) (void*);
+  void* param;
 } t_polltimer;
 
 
@@ -38,9 +38,9 @@ typedef struct polltimer {
 typedef struct polltimer_periodic {
   struct timespec ts;
   t_polltimer** queue_head;
-  void (*timer_handler) (int);
+  void (*timer_handler) (void*);
   int msec;
-  int param;
+  void* param;
 } t_polltimer_periodic;
 
 
@@ -59,8 +59,8 @@ static void expire_msec(struct timespec* ts,int msec)
 
 static t_polltimer* queue_timer(t_polltimer** queue_head,
 				struct timespec* ts,
-				void (*timer_handler)(int), 
-				int param)
+				void (*timer_handler)(void *), 
+				void* param)
 {
   t_polltimer* newtimer;
   t_polltimer** current = queue_head;
@@ -88,7 +88,7 @@ static t_polltimer* queue_timer(t_polltimer** queue_head,
   return newtimer;
 }
 
-static void periodic_handler(int param)
+static void periodic_handler(void* param)
 {
   t_polltimer_periodic* periodic = (t_polltimer_periodic*) param;
 
@@ -102,14 +102,14 @@ static void periodic_handler(int param)
   queue_timer(periodic->queue_head,
 	      &periodic->ts,
 	      periodic_handler,
-	      (int)periodic);
+	      (void*)periodic);
 }
 
 
 void  polltimer_periodic_start(t_polltimer** queue_head,
 			       struct polltimer_periodic** periodic,
-			       void (*timer_handler)(int), 
-			       int msec,int param)
+			       void (*timer_handler)(void*), 
+			       int msec,void* param)
 {
   *periodic=(t_polltimer_periodic*)
     malloc(sizeof(t_polltimer_periodic));
@@ -130,14 +130,14 @@ void  polltimer_periodic_start(t_polltimer** queue_head,
   /* set first expiry */
   expire_msec(&(*periodic)->ts,msec);
   
-  queue_timer(queue_head,&(*periodic)->ts,periodic_handler,(int)(*periodic));
+  queue_timer(queue_head,&(*periodic)->ts,periodic_handler,(void*)(*periodic));
 }
 
 
 
 t_polltimer* polltimer_start(t_polltimer** queue_head,
-			     void (*timer_handler)(int), 
-			     int msec,int param)
+			     void (*timer_handler)(void *), 
+			     int msec,void* param)
 {
   struct timespec ts;
  
