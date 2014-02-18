@@ -97,6 +97,7 @@ typedef struct satip_config
   unsigned int      symbol_rate;
   t_fec_inner       fec_inner;   
   int               position;
+  int               frontend;
   unsigned short    pid[SATIPCFG_MAX_PIDS];  
   
   /* delta info for addpids/delpids cmd */
@@ -112,7 +113,7 @@ typedef struct satip_config
 #define SATIPCFG_ERROR    1
 
 
-t_satip_config* satip_new_config();
+t_satip_config* satip_new_config(int frontend);
 
 int satip_del_pid(t_satip_config* cfg,unsigned short pid);
 int satip_add_pid(t_satip_config* cfg,unsigned short pid);

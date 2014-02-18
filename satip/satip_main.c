@@ -77,6 +77,8 @@ int main(int argc, char** argv)
 {
   char* host = NULL;
   char* port = "554";
+  char* device = "/dev/vtunerc0";
+  int frontend = -1;
 
   t_satip_config* satconf;
   struct satip_rtsp* srtsp;
@@ -88,7 +90,7 @@ int main(int argc, char** argv)
 
   char opt;
 
-  while((opt = getopt(argc, argv, "h:p:")) != -1 ) {
+  while((opt = getopt(argc, argv, "h:p:d:f:")) != -1 ) {
     switch(opt) 
       {
       case 'h': 
@@ -98,7 +100,15 @@ int main(int argc, char** argv)
       case 'p': 
 	port = optarg;
 	break;
-	
+
+      case 'd': 
+	device = optarg;
+	break;
+
+      case 'f': 
+	frontend = atoi(optarg);
+	break;	
+
       default:
         ERROR(MSG_MAIN,"unknown option %c\n",opt);
 	exit(1);	
@@ -110,7 +120,7 @@ int main(int argc, char** argv)
     exit(1);
   }
       
-  satconf = satip_new_config();
+  satconf = satip_new_config(frontend);
 
 #if 0
   {
@@ -126,7 +136,10 @@ int main(int argc, char** argv)
 
 
 #if 1
-  satvt = satip_vtuner_new("/dev/vtunerc0", satconf);
+  satvt = satip_vtuner_new( device, satconf );
+
+  if ( satvt==NULL )
+    exit(1);
 
   srtp  = satip_rtp_new(satip_vtuner_fd(satvt));
 

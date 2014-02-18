@@ -56,7 +56,7 @@ char* const strmap_rolloff[] = { "0.35","0.25","0.20" };
 
 
 
-t_satip_config* satip_new_config()
+t_satip_config* satip_new_config(int frontend)
 {
   int i;
   t_satip_config* cfg;
@@ -65,6 +65,7 @@ t_satip_config* satip_new_config()
 
   cfg->status    = SATIPCFG_INCOMPLETE;
   cfg->param_cfg = 0;
+  cfg->frontend = frontend;
 
   for ( i=0; i<SATIPCFG_MAX_PIDS; i++)
     cfg->mod_pid[i]=PID_IGNORE;
@@ -373,10 +374,17 @@ static int setpidlist(t_satip_config* cfg, char* str,int maxlen,const char* firs
 int satip_prepare_tuning(t_satip_config* cfg, char* str, int maxlen)
 {
   int printed;
+  char frontend_str[7]="";
+  
+  /* optional: specific frontend */
+  if ( cfg->frontend > 0 && cfg->frontend<100)
+    sprintf(frontend_str, "fe=%d&", cfg->frontend);
 
   /* DVB-S mandatory parameters */
-  printed = snprintf(str, maxlen, "src=%d&freq=%d.%d&pol=%c&msys=%s&sr=%d&fec=%s",
+  printed = snprintf(str, maxlen, 
+		     "src=%d&%sfreq=%d.%d&pol=%c&msys=%s&sr=%d&fec=%s",
 		     cfg->position,
+		     frontend_str,
 		     cfg->frequency/10, cfg->frequency%10,
 		     strmap_polarization[cfg->polarization],
 		     cfg->mod_sys == SATIPCFG_MS_DVB_S ? "dvbs" : "dvbs2",

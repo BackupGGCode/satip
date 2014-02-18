@@ -103,7 +103,10 @@ t_satip_vtuner* satip_vtuner_new(char* devname,t_satip_config* satip_cfg)
 
   fd  = open(devname, O_RDWR);
   if ( fd < 0)
-    return NULL;
+    {
+      ERROR(MSG_MAIN,"Couldn't open %s\n",devname);
+      return NULL;
+    }
   
   if ( ioctl(fd, VTUNER_SET_NAME, "vTuner")      ||
        ioctl(fd, VTUNER_SET_TYPE, "DVB-S2")      || 
