@@ -23,6 +23,8 @@
 #include <errno.h>
 #include <poll.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <sched.h>
 
 #include "satip_config.h"
 #include "satip_vtuner.h"
@@ -33,13 +35,16 @@
 
 
 
-int dbg_level = MSG_DEBUG;
-unsigned int dbg_mask = MSG_MAIN | MSG_NET | MSG_HW | MSG_SRV; /* MSG_DATA */
+int dbg_level = MSG_ERROR;
+unsigned int dbg_mask = MSG_MAIN | MSG_NET | MSG_HW | MSG_SRV; // MSG_DATA
 int use_syslog = 0;
+
+
+#ifdef TEST_SEQUENCER
 
 static int cseq=0;
 
-void test_sequencer(void* param)
+static void test_sequencer(void* param)
 {
   t_satip_config* sc=(t_satip_config*)param;
 
@@ -56,6 +61,7 @@ void test_sequencer(void* param)
       satip_set_rolloff(sc, SATIPCFG_R_0_35);
       satip_set_symbol_rate(sc,27500);
       satip_set_modtype(sc, SATIPCFG_MT_QPSK);
+      satip_set_position(sc, 1);
       satip_add_pid(sc, 18);
       break;
 
@@ -72,6 +78,27 @@ void test_sequencer(void* param)
     }
 }
 
+#endif
+
+
+static void enable_rt_scheduling()
+{
+  struct sched_param schedp;
+  
+  if ( mlockall(MCL_CURRENT|MCL_FUTURE) )    
+    DEBUG(MSG_MAIN,"Pages not locked\n");
+  else
+    DEBUG(MSG_MAIN,"Pages locked\n");
+
+  schedp.sched_priority = sched_get_priority_min(SCHED_FIFO);
+  
+  if ( sched_setscheduler(0, SCHED_FIFO, &schedp) )
+    DEBUG(MSG_MAIN,"No realtime scheduling\n");
+  else
+    DEBUG(MSG_MAIN,"Realtime scheduling enabled at prio %d\n",schedp.sched_priority);
+    
+}
+
 
 int main(int argc, char** argv)
 {
@@ -86,11 +113,12 @@ int main(int argc, char** argv)
   struct satip_vtuner* satvt;
 
   struct pollfd pollfds[2];
+  int poll_idx;
   struct polltimer* timerq=NULL;
 
   char opt;
 
-  while((opt = getopt(argc, argv, "h:p:d:f:")) != -1 ) {
+  while((opt = getopt(argc, argv, "h:p:d:f:m:l:")) != -1 ) {
     switch(opt) 
       {
       case 'h': 
@@ -109,6 +137,14 @@ int main(int argc, char** argv)
 	frontend = atoi(optarg);
 	break;	
 
+      case 'm':
+	dbg_mask = atoi(optarg);
+	break;
+
+      case 'l':
+	dbg_level = atoi(optarg);
+	break;
+
       default:
         ERROR(MSG_MAIN,"unknown option %c\n",opt);
 	exit(1);	
@@ -119,34 +155,32 @@ int main(int argc, char** argv)
     ERROR(MSG_MAIN,"No host argument\n");
     exit(1);
   }
-      
+        
+
+  enable_rt_scheduling();
+
   satconf = satip_new_config(frontend);
 
-#if 0
-  {
+#ifdef TEST_SEQUENCER
 
-    struct polltimer_periodic* periodic;
-    polltimer_periodic_start(&timerq, 
+  struct polltimer_periodic* periodic;
+
+  device = device; 
+  satvt = NULL;
+  polltimer_periodic_start(&timerq, 
 			   &periodic,
 			   test_sequencer,
 			   10,
-			   (int)satconf);
-  }
-#endif
-
-
-#if 1
-  satvt = satip_vtuner_new( device, satconf );
-
-  if ( satvt==NULL )
-    exit(1);
-
-  srtp  = satip_rtp_new(satip_vtuner_fd(satvt));
+			   (void*)satconf);
+  
+  srtp  = satip_rtp_new(0);
+  
+  /* no vtuner fd*/
+  poll_idx=0;
 
 #else
-  srtp  = satip_rtp_new(0);
 
-#endif
+  satvt = satip_vtuner_new( device, satconf );
   
   if ( satvt == NULL )
     {
@@ -154,28 +188,33 @@ int main(int argc, char** argv)
       exit(1);
     }
 
-  srtsp = satip_rtsp_new(satconf,&timerq, host, port,
-			 satip_rtp_port(srtp));
-  
+  srtp  = satip_rtp_new(satip_vtuner_fd(satvt));
+
   pollfds[0].fd=satip_vtuner_fd(satvt);
   pollfds[0].events = POLLPRI;
-  
+  poll_idx=1;
+
+#endif
+
+  srtsp = satip_rtsp_new(satconf,&timerq, host, port,
+			 satip_rtp_port(srtp));
+    
 
   while (1)
     {
       /* apply any updates on rtsp  */
       satip_rtsp_check_update(srtsp);
-
+      
       /* vt control events */
       pollfds[0].revents = 0;
       
       /* rtsp socket may be closed */
-      pollfds[1].fd = satip_rtsp_socket(srtsp);
-      pollfds[1].events = satip_rtsp_pollflags(srtsp);
-      pollfds[1].revents = 0;
+      pollfds[poll_idx].fd = satip_rtsp_socket(srtsp);
+      pollfds[poll_idx].events = satip_rtsp_pollflags(srtsp);
+      pollfds[poll_idx].revents = 0;
       
       /* poll and timeout on next pending timer */
-      if ( poll(pollfds, pollfds[1].events == 0 ? 1 : 2, 
+      if ( poll(pollfds, pollfds[poll_idx].events == 0 ? poll_idx : poll_idx+1 , 
 		polltimer_next_ms(timerq) ) ==-1 && 
 	   errno!=EINTR )
 	{
@@ -187,12 +226,12 @@ int main(int argc, char** argv)
       polltimer_call_next(&timerq);
 	
       /* vt control event handling */
-      if ( pollfds[0].revents !=0 )
+      if ( poll_idx>0 && pollfds[0].revents !=0 )
 	satip_vtuner_event(satvt);
 
       /* rtsp event handling */
-      if ( pollfds[1].revents !=0 )
-	satip_rtsp_pollevents(srtsp, pollfds[1].revents);      
+      if ( pollfds[poll_idx].revents !=0 )
+	satip_rtsp_pollevents(srtsp, pollfds[poll_idx].revents);      
     }
   
   return 0;

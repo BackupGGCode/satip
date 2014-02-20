@@ -27,6 +27,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <sched.h>
+
 #include "satip_rtp.h"
 #include "log.h"
 
@@ -51,7 +53,16 @@ static void* rtp_receiver(void* param)
 {    
   unsigned char rxbuf[32768];
   struct pollfd pollfds[2];
+  struct sched_param schedp;
   t_satip_rtp* srtp=(t_satip_rtp*)param;
+
+  
+  schedp.sched_priority = sched_get_priority_min(SCHED_FIFO)+1;
+  
+  if ( sched_setscheduler(0, SCHED_FIFO, &schedp) )
+    DEBUG(MSG_MAIN,"RTP: No realtime scheduling\n");
+  else
+    DEBUG(MSG_MAIN,"RTP: Realtime scheduling enabled at prio %d\n",schedp.sched_priority);
 
 
   pollfds[0].fd = srtp->rtp_socket;
