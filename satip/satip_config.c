@@ -56,22 +56,19 @@ char* const strmap_rolloff[] = { "0.35","0.25","0.20" };
 
 
 
+
 t_satip_config* satip_new_config(int frontend)
 {
-  int i;
   t_satip_config* cfg;
 
   cfg=(t_satip_config*) malloc(sizeof(t_satip_config));
 
-  cfg->status    = SATIPCFG_INCOMPLETE;
-  cfg->param_cfg = 0;
   cfg->frontend = frontend;
 
-  for ( i=0; i<SATIPCFG_MAX_PIDS; i++)
-    cfg->mod_pid[i]=PID_IGNORE;
+  satip_clear_config(cfg);
 
   return cfg;
-};
+}
 
 
 
@@ -468,4 +465,16 @@ int satip_settle_config(t_satip_config* cfg)
     }
 
   return retval;
+}
+
+
+void satip_clear_config(t_satip_config* cfg)
+{
+  int i;
+
+  cfg->status    = SATIPCFG_INCOMPLETE;
+  cfg->param_cfg = 0;
+  
+  for ( i=0; i<SATIPCFG_MAX_PIDS; i++)
+    cfg->mod_pid[i]=PID_IGNORE;
 }

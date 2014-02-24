@@ -138,6 +138,7 @@ int satip_prepare_tuning(t_satip_config* cfg, char* str, int maxlen);
 int satip_prepare_pids(t_satip_config* cfg, char* str, int maxlen,int modpid);
 
 int satip_settle_config(t_satip_config* cfg);
+void satip_clear_config(t_satip_config* cfg);
 
 #endif
 

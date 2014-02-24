@@ -123,8 +123,6 @@ static void reset_connection(t_satip_rtsp* rtsp)
   rtsp->rxbuf[0]=0;
 
 
-
-
   if (rtsp->timer != NULL)
     {
       polltimer_cancel(rtsp->timer_queue,rtsp->timer);
@@ -133,6 +131,7 @@ static void reset_connection(t_satip_rtsp* rtsp)
 
   if (rtsp->sockfd>=0)
     {
+      DEBUG(MSG_NET,"closing socket\n");
       close(rtsp->sockfd);
       rtsp->sockfd=-1;
     }
@@ -241,6 +240,7 @@ static int handle_response_options(t_satip_rtsp* rtsp)
   return SATIP_RTSP_COMPLETE;
 }
 
+
 static int handle_response_setup(t_satip_rtsp* rtsp)
 {
   char* str;
@@ -279,9 +279,10 @@ static int handle_response_play(t_satip_rtsp* rtsp)
 
 static int handle_response_teardown(t_satip_rtsp* rtsp)
 {
+  reset_connection(rtsp);
+
   return SATIP_RTSP_OK;
 }
-
 
 
 static int send_options(t_satip_rtsp* rtsp)
@@ -302,11 +303,39 @@ static int send_options(t_satip_rtsp* rtsp)
   if ( printed >= MAX_BUF )
     return SATIP_RTSP_ERROR;
 
+  DEBUG(MSG_NET,">>txbuf:\n%s\n<<\n",rtsp->txbuf);
+
   if ( send(rtsp->sockfd,rtsp->txbuf,printed,0) != printed )
     return SATIP_RTSP_ERROR;
 
   return SATIP_RTSP_OK;
 }
+
+
+static int send_teardown(t_satip_rtsp* rtsp)
+{
+  int printed;
+
+  printed =
+    snprintf(rtsp->txbuf,MAX_BUF,"TEARDOWN rtsp://%s/stream=%d RTSP/1.0\r\n"
+	     "CSeq: %d\r\n"
+	     "Session: %s\r\n\r\n",
+	     rtsp->host,
+	     rtsp->streamid,
+	     rtsp->cseq++,
+	     rtsp->session);
+  
+  if ( printed >= MAX_BUF )
+    return SATIP_RTSP_ERROR;
+
+  DEBUG(MSG_NET,">>txbuf:\n%s\n<<\n",rtsp->txbuf);
+
+  if ( send(rtsp->sockfd,rtsp->txbuf,printed,0) != printed )
+    return SATIP_RTSP_ERROR;
+
+  return SATIP_RTSP_OK;
+}
+
 
 
 static int send_setup(t_satip_rtsp* rtsp)
@@ -674,11 +703,14 @@ void  satip_rtsp_check_update(struct satip_rtsp*  rtsp)
       break;
       
     case RTSP_READY:
-      if ( rtsp->request == RTSP_REQ_NONE &&
-	   (satip_tuning_required(rtsp->satip_config) || 
-	    satip_pid_update_required(rtsp->satip_config)) )
+      if ( rtsp->request == RTSP_REQ_NONE )
 	{
-	  send_request(rtsp, RTSP_READY, RTSP_REQ_PLAY, send_play);
+	  if ( satip_tuning_required(rtsp->satip_config) || 
+	       satip_pid_update_required(rtsp->satip_config)) 
+	    send_request(rtsp, RTSP_READY, RTSP_REQ_PLAY, send_play);
+
+	  else if ( !satip_valid_config(rtsp->satip_config) )
+	    send_request(rtsp, RTSP_READY, RTSP_REQ_TEARDOWN, send_teardown);
 	}
       break;
 

@@ -216,12 +216,8 @@ static void set_voltage(struct satip_vtuner* vt, struct vtuner_message* msg)
     satip_set_polarization(vt->satip_cfg, SATIPCFG_P_VERTICAL);
   else if (msg->body.voltage == SEC_VOLTAGE_18)
     satip_set_polarization(vt->satip_cfg, SATIPCFG_P_HORIZONTAL);
-  else
-    {
-      /*  SEC_VOLTAGE_OFF
-	  todo: shutdown stream  ?? 
-      */
-    }
+  else  /*  SEC_VOLTAGE_OFF */
+    satip_clear_config(vt->satip_cfg);
   
   DEBUG(MSG_MAIN,"MSG_SET_VOLTAGE:  %d\n",msg->body.voltage);
 }
