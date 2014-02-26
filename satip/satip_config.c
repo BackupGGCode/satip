@@ -234,7 +234,10 @@ int satip_set_polarization(t_satip_config* cfg,t_polarization pol)
   cfg->param_cfg |= PC_POL;
   cfg->polarization = pol;
 
-  param_update_status(cfg);
+  /* param_update_status(cfg); 
+     polarization shall not trigger tuning if fe settings are following.
+     may lead to trouble if dvb app is not following a defined sequence */
+
   return SATIPCFG_OK;
 }
 
@@ -422,13 +425,13 @@ int satip_prepare_pids(t_satip_config* cfg, char* str, int maxlen,int modpid)
     }
   else
     {
-      printed = setpidlist(cfg,str,maxlen,"pids=",PID_VALID, PID_ADD);
-      
-      /* nothing was added, use "none" */
-      if ( printed == 0 )
-	{
-	  printed = snprintf(str,maxlen,"pids=none");
-	}
+      printed = setpidlist(cfg,str,maxlen,"pids=",PID_VALID, PID_ADD);     
+    }
+
+  /* nothing was added, use "none" */
+  if ( printed == 0 )
+    {
+      printed = snprintf(str,maxlen,"pids=none");
     }
   
   /* don´t forget to check on caller */

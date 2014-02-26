@@ -101,10 +101,10 @@ static void pidtab_copy_to_msg(struct vtunerc_ctx *ctx,
 				struct vtuner_message *msg)
 {
 	int i;
-
-	for (i = 0; i < (MAX_PIDTAB_LEN - 1); i++)
+	
+	for (i = 0; i < MAX_PIDTAB_LEN ; i++)
 		msg->body.pidlist[i] = ctx->pidtab[i]; /*TODO: optimize it*/
-	msg->body.pidlist[MAX_PIDTAB_LEN - 1] = 0;
+	/* msg->body.pidlist[MAX_PIDTAB_LEN - 1] = 0; */
 }
 
 static int vtunerc_start_feed(struct dvb_demux_feed *feed)
