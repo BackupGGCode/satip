@@ -134,8 +134,6 @@ static int vtunerc_start_feed(struct dvb_demux_feed *feed)
 	}
 
 	/* organize PID list table */
-	printk(KERN_ERR "vtunerc%d: feed add %d\n",ctx->idx,feed->pid);
-
 	if (pidtab_find_index(ctx->pidtab, feed->pid) < 0) {
 		pidtab_add_pid(ctx->pidtab, feed->pid);
 
@@ -155,9 +153,6 @@ static int vtunerc_stop_feed(struct dvb_demux_feed *feed)
 	struct vtuner_message msg;
 
 	/* organize PID list table */
-
-	printk(KERN_ERR "vtunerc%d: feed stop %d\n",ctx->idx,feed->pid);
-
 	if (pidtab_find_index(ctx->pidtab, feed->pid) > -1) {
 		pidtab_del_pid(ctx->pidtab, feed->pid);
 

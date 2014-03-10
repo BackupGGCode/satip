@@ -17,9 +17,21 @@ ccflags-y += -Idrivers/media/common/tuners
 ccflags-y += -Iinclude
 ccflags-y += -DVTUNERC_MAX_ADAPTERS=$(VTUNERC_MAX_ADAPTERS)
 
+ifneq "$(ARCH)" ""
+	MKARCH = ARCH=$(ARCH)
+endif
+
+ifneq "$(CROSS_COMPILE)" ""
+	MKCROSS = CROSS_COMPILE=$(CROSS_COMPILE)
+endif
+
+
 #
 # for external compilation
 #
+ifneq "$(KSRC)" ""
+	KDIR = $(KSRC)
+endif
 
 #KDIR ?= /usr/src/`uname -r`
 ifeq ($(origin KDIR), undefined)
@@ -32,10 +44,9 @@ ifeq ($(origin KDIR), undefined)
 	endif
 endif
 
-PWD := $(shell pwd)
 
 default:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
+	$(MAKE) $(MKARCH) $(MKCROSS) -C $(KDIR) M=$(shell pwd) modules
 
 clean:
 	rm -f *.o
@@ -43,3 +54,6 @@ clean:
 	rm -f *.mod.c
 	rm -f .*.cmd
 	rm -f *~
+	rm -fr .tmp_versions
+	rm -f modules.order Module.symvers
+ 
