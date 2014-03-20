@@ -417,19 +417,19 @@ static int send_play(t_satip_rtsp* rtsp)
       printed += satip_prepare_tuning(rtsp->satip_config, buf+printed, remain-printed);
       if ( printed>=remain )
 	return SATIP_RTSP_ERROR;
+      
+      printed += snprintf(buf+printed,remain-printed,"&");
+
+      if ( printed >= remain )
+	return SATIP_RTSP_ERROR;
+
+      printed += satip_prepare_pids(rtsp->satip_config, buf+printed, remain-printed,0);
+      if ( printed>=remain )
+	return SATIP_RTSP_ERROR;
+      
     }
-
-
-  if (tuning || pid_update )
+  else if (  pid_update )
     {
-
-      if (tuning)
-	{
-	  printed += snprintf(buf+printed,remain-printed,"&");
-
-	  if ( printed >= remain )
-	    return SATIP_RTSP_ERROR;
-	}
 
       printed += satip_prepare_pids(rtsp->satip_config, buf+printed, remain-printed,1);
       if ( printed>=remain )
