@@ -234,9 +234,23 @@ int satip_set_polarization(t_satip_config* cfg,t_polarization pol)
   cfg->param_cfg |= PC_POL;
   cfg->polarization = pol;
 
-  /* param_update_status(cfg); 
-     polarization shall not trigger tuning if fe settings are following.
-     may lead to trouble if dvb app is not following a defined sequence */
+  /*  polarization shall only trigger tuning if it was powered down explicitly */
+  if ( cfg->lnb_off==1 )
+    {
+      cfg->lnb_off = 0;
+      param_update_status(cfg); 
+    }
+
+  return SATIPCFG_OK;
+}
+
+
+int satip_lnb_off(t_satip_config* cfg)
+{
+  cfg->lnb_off = 1;
+  cfg->param_cfg &= ~PC_POL;
+  
+  cfg->status = SATIPCFG_INCOMPLETE;
 
   return SATIPCFG_OK;
 }
@@ -477,6 +491,7 @@ void satip_clear_config(t_satip_config* cfg)
 
   cfg->status    = SATIPCFG_INCOMPLETE;
   cfg->param_cfg = 0;
+  cfg->lnb_off = 0;
   
   for ( i=0; i<SATIPCFG_MAX_PIDS; i++)
     cfg->mod_pid[i]=PID_IGNORE;

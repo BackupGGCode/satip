@@ -90,6 +90,7 @@ typedef struct satip_config
   /* current/new configuration */
   unsigned int      frequency;
   t_polarization    polarization;
+  int               lnb_off;
   t_roll_off        roll_off;
   t_mod_sys         mod_sys;
   t_mod_type        mod_type;
@@ -121,6 +122,7 @@ void satip_del_allpid(t_satip_config* cfg);
 
 int satip_set_freq(t_satip_config* cfg,unsigned int freq);
 int satip_set_polarization(t_satip_config* cfg,t_polarization pol);
+int satip_lnb_off(t_satip_config* cfg);
 int satip_set_rolloff(t_satip_config* cfg,t_roll_off rolloff);
 int satip_set_modsys(t_satip_config* cfg,t_mod_sys modsys);
 int satip_set_modtype(t_satip_config* cfg,t_mod_type modtype);
