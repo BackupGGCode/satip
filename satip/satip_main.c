@@ -116,7 +116,7 @@ int main(int argc, char** argv)
   int poll_idx;
   struct polltimer* timerq=NULL;
 
-  char opt;
+  int opt;
 
   while((opt = getopt(argc, argv, "h:p:d:f:m:l:")) != -1 ) {
     switch(opt) 
