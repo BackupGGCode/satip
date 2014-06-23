@@ -49,13 +49,60 @@ typedef struct satip_rtp
 
 
 
+static void rtp_data(unsigned char* buffer,int rx)
+{
+  int done=0;
+  uint32_t* buf=(uint32_t*) buffer;
+  uint32_t val;
+  int plen; 
+  int pt;
+  char infobuf[200];
+
+  while(done<rx)
+    {
+      val= ntohl(*buf);
+      pt= ( val  & 0x00ff0000 ) >>16 ;
+      plen= val & 0x0000ffff;
+
+      switch(pt) 
+	{
+	case 204:
+	  if (plen>1)
+	    {
+	      val=buf[2];
+	      DEBUG(MSG_MAIN,"RTCP: app defined (204) name: %c%c%c%c\n",
+		    val & 0x000000ff,
+		    val>>8 & 0x000000ff,
+		    val>>16 & 0x000000ff,
+		    val>>24 & 0x000000ff);
+	      
+	      val=htonl(buf[3]);
+	      if ( val <200 )
+		{
+		  snprintf(infobuf,val,"%s",(char*) &buf[4]);
+		  infobuf[val]=0;
+		  DEBUG(MSG_MAIN,"RTCP: app info: %s\n",infobuf);
+		}
+	    }
+
+	  break;
+	
+	default:
+	  DEBUG(MSG_MAIN,"RTCP: packet type %d len %d\n",pt,plen);
+	}
+     
+      buf+=plen+1;
+      done+=(plen+1)*4;
+    }
+}
+
+
 static void* rtp_receiver(void* param)
 {    
   unsigned char rxbuf[32768];
   struct pollfd pollfds[2];
   struct sched_param schedp;
   t_satip_rtp* srtp=(t_satip_rtp*)param;
-
   
   schedp.sched_priority = sched_get_priority_min(SCHED_FIFO)+1;
   
@@ -94,9 +141,12 @@ static void* rtp_receiver(void* param)
 
       if ( pollfds[1].revents & POLLIN )
 	{
+	  int rx;
 	  pollfds[1].revents = 0;
-	  DEBUG(MSG_DATA,"RTCP: rd %d\n",
-		recv(pollfds[1].fd, rxbuf, 32768,0));
+	  
+	  rx=recv(pollfds[1].fd, rxbuf, 32768,0);
+	  rtp_data(rxbuf,rx);
+	  DEBUG(MSG_DATA,"RTCP: rd %d\n",rx);
 	}
 
     }
